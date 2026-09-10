@@ -1378,6 +1378,9 @@ class Filesystem:
     extra_options: Optional[List[str]] = None
 
     _mount: Optional["Mount"] = attributes.backlink()
+    _subvolumes: List["BtrfsSubvolume"] = attributes.backlink(
+        default=attr.Factory(list)
+    )
 
     def mount(self):
         return self._mount
@@ -1558,6 +1561,21 @@ class ZFS:
         yield self
         yield self.pool
         yield from self.pool.iter_underlying()
+
+
+@fsobj("btrfs_subvolume")
+class BtrfsSubvolume:
+    volume: Filesystem = attributes.ref(backlink="_subvolumes")
+    subvolume: str
+
+    _mount: Optional["Mount"] = attributes.backlink()
+
+    @property
+    def fstype(self):
+        return self.volume.fstype
+
+    def on_remote_storage(self) -> bool:
+        return self.volume.on_remote_storage()
 
 
 ConstructedDevice = Union[Raid, LVM_VolGroup, ZPool]
